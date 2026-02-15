@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English 11 Review Game</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Custom Animations */
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes zoom-in {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        /* NEW: Slow Fade In for Questions */
+        @keyframes slow-fade-in {
+            from { opacity: 0; backdrop-filter: blur(0px); }
+            to { opacity: 1; backdrop-filter: blur(16px); }
+        }
+
+        .animate-fade-in { animation: fade-in 0.5s ease-out; }
+        .animate-slide-up { animation: slide-up 0.5s ease-out; }
+        .animate-zoom-in { animation: zoom-in 0.3s ease-out; }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .animate-slow-appear { animation: slow-fade-in 2.5s ease-out forwards; }
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 12px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1); 
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #f472b6; 
+            border-radius: 10px;
+            border: 3px solid rgba(0,0,0,0);
+            background-clip: padding-box;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #ec4899; 
+            border: 3px solid rgba(0,0,0,0);
+            background-clip: padding-box;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 min-h-screen text-white font-sans selection:bg-yellow-300 selection:text-purple-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ICONS (Inline SVGs) ---
+        const IconTrophy = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        );
+        const IconX = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        );
+        const IconCheck = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 6 9 17l-5-5"/></svg>
+        );
+        const IconArrowRight = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        );
+        const IconRotateCcw = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        );
+        const IconClock = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        );
+        const IconUsers = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        );
+        const IconStar = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        );
+
+        // --- DATA ---
+        const FINAL_JEOPARDY = {
+            category: "LITERARY SYMBOLS",
+            question: "In <i>The Fall of the House of Usher</i>, the house physically cracks and sinks into this body of water, symbolizing the total collapse and submersion of the family line.",
+            answer: "The Tarn (or The Dark Lake)"
+        };
+
+        const CATEGORIES = [
+          {
+            title: "Am I The Jerk?",
+            clues: [
+              {
+                value: 100,
+                question: "AITJ for screaming at kids to get off my lawn? I mean, I'm technically protecting them because my wife is literally the house and she will eat them.",
+                answer: "Mr. Nebbercracker (Monster House)"
+              },
+              {
+                value: 200,
+                question: "AITJ for trying to burn down a bridge just because a nice soldier asked me to? I just wanted to be a hero for the South, but now my neck hurts.",
+                answer: "Peyton Farquhar (An Occurrence at Owl Creek Bridge)"
+              },
+              {
+                value: 300,
+                question: "AITJ for burying my twin sister alive? In my defense, she looked dead, and I suffer from acute sensory issues, so her screams were really stressing me out.",
+                answer: "Roderick Usher (The Fall of the House of Usher)"
+              },
+              {
+                value: 400,
+                question: "AITJ for killing my brother? He killed our mom when she was giving birth to us, and he kept creating poisonous plants just to be annoying.",
+                answer: "The Right-Handed Twin (The World on The Turtle's Back)"
+              },
+              {
+                value: 500,
+                question: "AITJ for turning into a bear and chasing my seven sisters into the sky? I know we were playing, but I couldn't control the animal spirit taking over me.",
+                answer: "The Brother / The Bear (The Way to Rainy Mountain / Kiowa Myth)"
+              }
+            ]
+          },
+          {
+            title: "Vocab: Gen Z Chat",
+            clues: [
+              {
+                value: 100,
+                question: "Stop roasting him in the comments. You're always making fun of his outfit and mocking him.",
+                answer: "Deride"
+              },
+              {
+                value: 200,
+                question: "He literally didn't even care. He just shrugged with total lack of interest. So chill it was annoying.",
+                answer: "Nonchalance"
+              },
+              {
+                value: 300,
+                question: "Bro hates everyone. He avoids people like the plague. Total hater energy.",
+                answer: "Misanthrope"
+              },
+              {
+                value: 400,
+                question: "Look at that drip. The gold chain, the mansion, the private jet... it's giving rich and fancy.",
+                answer: "Opulence"
+              },
+              {
+                value: 500,
+                question: "That pick-up line is so overused. Everyone says it. It's cringe, unoriginal, and basic.",
+                answer: "Hackneyed"
+              }
+            ]
+          },
+          {
+            title: "Zillow Listings from Hell",
+            clues: [
+              {
+                value: 100,
+                question: "Charming Fixer-Upper. Features a unique personality (it's alive), a uvula in the hallway, and a tendency to swallow tricycles.",
+                answer: "The House (Monster House)"
+              },
+              {
+                value: 200,
+                question: "Historic Gothic Mansion. Features include a giant fissure running down the front wall and a swampy tarn. Structural integrity is... **precarious**.",
+                answer: "The House of Usher"
+              },
+              {
+                value: 300,
+                question: "Rustic Railway Bridge. Stunning views of the creek below. Comes with a loose plank and a hanging rope. Perfect for a quick drop.",
+                answer: "Owl Creek Bridge"
+              },
+              {
+                value: 400,
+                question: "Mobile Home. Located entirely on the shell of a giant sea reptile. Grows larger as you add dirt from the ocean floor.",
+                answer: "The Turtle's Back / The Earth (The World on The Turtle's Back)"
+              },
+              {
+                value: 500,
+                question: "Wide Open Plains. Harsh weather, hot summers, and spiritual landmarks. Features a hollow log origin story.",
+                answer: "Rainy Mountain (or The Kiowa Homeland)"
+              }
+            ]
+          },
+          {
+            title: "Dr. Phil Diagnoses",
+            clues: [
+              {
+                value: 100,
+                question: "This elderly man isn't just a **misanthrope**; his aggressive behavior is a defense mechanism to hide the grief of losing his wife, whom he literally lives inside.",
+                answer: "Mr. Nebbercracker"
+              },
+              {
+                value: 200,
+                question: "This patient suffers from **macabre** paranoia and hypersensitivity. He believes his house is sentient and has a morbid connection to his twin sister.",
+                answer: "Roderick Usher"
+              },
+              {
+                value: 300,
+                question: "This patient lives in a **fabricated** reality. To cope with his **impending** execution, he hallucinates an entire escape sequence in the span of a few seconds.",
+                answer: "Peyton Farquhar"
+              },
+              {
+                value: 400,
+                question: "This sibling displays a **paramount** need for order and righteousness. His rigid morality leads him to commit fratricide against his chaotic brother.",
+                answer: "The Right-Handed Twin"
+              },
+              {
+                value: 500,
+                question: "This young woman is surprisingly **docile** and catatonic. She appears to have no will of her own, acting merely as a physical mirror to her brother's mental decay.",
+                answer: "Madeline Usher"
+              }
+            ]
+          },
+          {
+            title: "Film Plot Badly (Vocab)",
+            clues: [
+              {
+                value: 100,
+                question: "A young lion cub must accept his role as royal **progeny** and take the throne after his uncle murders his father.",
+                answer: "The Lion King"
+              },
+              {
+                value: 200,
+                question: "An **abrasive** ogre just wants to be left alone in his swamp but is forced to go on a quest to save a princess.",
+                answer: "Shrek"
+              },
+              {
+                value: 300,
+                question: "A queen's **turbulent** emotions cause an eternal winter, forcing her sister to chase her up a mountain to fix the weather.",
+                answer: "Frozen"
+              },
+              {
+                value: 400,
+                question: "A girl volunteers as tribute to stop the **opulence** of the Capitol from oppressing her district and starving her people.",
+                answer: "The Hunger Games"
+              },
+              {
+                value: 500,
+                question: "A **morose** old man ties thousands of balloons to his house to fulfill a promise to his dead wife.",
+                answer: "Up"
+              }
+            ]
+          }
+        ];
+
+        // --- APP COMPONENT ---
+        function JeopardyGame() {
+          const [gameState, setGameState] = useState('intro'); // intro, board, clue, final
+          const [activeClue, setActiveClue] = useState(null);
+          const [revealed, setRevealed] = useState(false);
+          const [visited, setVisited] = useState(new Set());
+          const [teams, setTeams] = useState([]);
+          const [teamCount, setTeamCount] = useState(4);
+          const [timer, setTimer] = useState(30);
+
+          // Timer Logic
+          useEffect(() => {
+            let interval;
+            if ((gameState === 'clue' || gameState === 'final') && !revealed && timer > 0) {
+              interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+              }, 1000);
+            }
+            return () => clearInterval(interval);
+          }, [gameState, revealed, timer]);
+
+          const handleStart = () => {
+            const newTeams = Array.from({ length: teamCount }, (_, i) => ({
+              id: i + 1,
+              name: `Team ${i + 1}`,
+              score: 0
+            }));
+            setTeams(newTeams);
+            setGameState('board');
+          };
+
+          const handleClueClick = (catIndex, clueIndex) => {
+            const key = `${catIndex}-${clueIndex}`;
+            if (visited.has(key)) return;
+
+            setActiveClue({ catIndex, clueIndex });
+            setGameState('clue');
+            setRevealed(false);
+            setTimer(30);
+          };
+
+          const handleFinalJeopardy = () => {
+              setGameState('final');
+              setRevealed(false);
+              setTimer(60); // 1 minute for Final Jeopardy
+          };
+
+          const handleReveal = () => {
+            setRevealed(true);
+          };
+
+          const handleScore = (teamIndex, delta) => {
+            const newTeams = [...teams];
+            newTeams[teamIndex].score += delta;
+            setTeams(newTeams);
+          };
+
+          const handleCloseClue = () => {
+            if (activeClue) {
+              const key = `${activeClue.catIndex}-${activeClue.clueIndex}`;
+              setVisited(new Set([...visited, key]));
+            }
+            setGameState('board');
+            setActiveClue(null);
+          };
+
+          const handleNameChange = (teamIndex, newName) => {
+            const newTeams = [...teams];
+            newTeams[teamIndex].name = newName;
+            setTeams(newTeams);
+          };
+
+          // --- SCREENS ---
+
+          // 1. INTRO SCREEN
+          if (gameState === 'intro') {
+            return (
+              <div className="min-h-screen flex flex-col items-center justify-center text-center p-8 font-sans">
+                <div className="animate-float mb-8 drop-shadow-2xl">
+                    <IconTrophy size={140} className="text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.8)]" />
+                </div>
+                <h1 className="text-6xl md:text-9xl font-black text-white tracking-wider mb-4 drop-shadow-[4px_4px_0_#9333ea]" 
+                    style={{ fontFamily: 'Impact, sans-serif' }}>
+                  JEOPARDY!
+                </h1>
+                <h2 className="text-4xl text-white font-black mb-12 tracking-widest uppercase drop-shadow-md">English 11 Review</h2>
+                
+                {/* Team Selector */}
+                <div className="mb-12 bg-white/20 p-8 rounded-3xl backdrop-blur-md border border-white/40 shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
+                    <h3 className="text-white text-2xl mb-6 font-bold uppercase tracking-wider flex items-center justify-center gap-3 drop-shadow-md">
+                        <IconUsers className="text-yellow-300" /> Select Number of Teams
+                    </h3>
+                    <div className="flex gap-4 justify-center">
+                        {[2, 3, 4, 5, 6].map(num => (
+                            <button
+                                key={num}
+                                onClick={() => setTeamCount(num)}
+                                className={`w-14 h-14 rounded-2xl font-black text-2xl transition-all duration-300 shadow-lg ${
+                                    teamCount === num 
+                                    ? 'bg-yellow-400 text-purple-900 scale-125 border-4 border-yellow-200 rotate-6' 
+                                    : 'bg-white/30 text-white hover:bg-white/50 border-2 border-white/30 hover:scale-110'
+                                }`}
+                            >
+                                {num}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                
+                <button 
+                  onClick={handleStart}
+                  className="bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-300 hover:to-emerald-400 text-white text-4xl font-black py-6 px-16 rounded-full shadow-[0_10px_0_#065f46] border-4 border-green-200 transition-all transform hover:scale-105 active:scale-95 active:shadow-none active:translate-y-2"
+                >
+                  START GAME
+                </button>
+              </div>
+            );
+          }
+
+          // RENDER MAIN GAME CONTAINER (Board is always rendered now)
+          const isClueActive = (gameState === 'clue' || gameState === 'final');
+          
+          return (
+            <div className="min-h-screen flex flex-col overflow-hidden relative">
+              
+              {/* HEADER */}
+              <div className="bg-white/10 backdrop-blur-lg p-4 flex justify-between items-center shadow-lg z-10 border-b border-white/20">
+                <div className="text-yellow-300 font-black text-3xl ml-4 tracking-tighter drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)] italic" style={{ fontFamily: 'Impact, sans-serif' }}>ENGLISH 11 REVIEW</div>
+                <div className="flex gap-4">
+                    <button onClick={() => setGameState('intro')} className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-xl transition-all shadow-md hover:scale-105" title="Reset Game">
+                        <IconRotateCcw size={28} />
+                    </button>
+                </div>
+              </div>
+
+              {/* GAME BOARD (Visible underneath overlay) */}
+              <div className="flex-1 flex flex-col p-2 md:p-6 overflow-hidden">
+                <div className="grid grid-cols-5 gap-3 md:gap-4 h-full overflow-y-auto pb-24 custom-scroll pr-2">
+                    {CATEGORIES.map((cat, catIdx) => (
+                      <div key={catIdx} className="flex flex-col gap-3">
+                        {/* Category Header */}
+                        <div className="bg-gradient-to-br from-fuchsia-600 to-purple-700 text-white text-xs md:text-lg font-black text-center p-2 rounded-2xl shadow-lg flex items-center justify-center h-24 md:h-32 uppercase tracking-wide border-b-8 border-purple-900 leading-tight transform hover:-translate-y-1 transition-transform">
+                          {cat.title}
+                        </div>
+                        {/* Clues */}
+                        {cat.clues.map((clue, clueIdx) => {
+                           const isVisited = visited.has(`${catIdx}-${clueIdx}`);
+                           return (
+                            <button
+                              key={clueIdx}
+                              disabled={isVisited || isClueActive}
+                              onClick={() => handleClueClick(catIdx, clueIdx)}
+                              className={`flex-1 flex items-center justify-center text-2xl md:text-5xl font-black rounded-2xl shadow-md transition-all duration-300 relative overflow-hidden group min-h-[80px]
+                                ${isVisited 
+                                  ? 'bg-black/20 text-white/30 cursor-default border-4 border-white/5' 
+                                  : 'bg-cyan-500 text-white hover:bg-cyan-400 border-b-8 border-cyan-700 hover:border-cyan-500 hover:shadow-[0_0_20px_rgba(34,211,238,0.6)] hover:-translate-y-1 active:border-b-0 active:translate-y-2 active:shadow-none'}
+                              `}
+                              style={{ fontFamily: 'Impact, sans-serif' }}
+                            >
+                              ${clue.value}
+                              {!isVisited && <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />}
+                            </button>
+                           );
+                        })}
+                      </div>
+                    ))}
+                </div>
+                
+                {/* Final Jeopardy Button */}
+                <div className="mt-4 flex justify-center pb-24">
+                     <button 
+                         onClick={handleFinalJeopardy}
+                         disabled={isClueActive}
+                         className="bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-black text-xl py-4 px-12 rounded-full border-b-8 border-yellow-600 shadow-2xl flex items-center gap-3 animate-pulse active:border-b-0 active:translate-y-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                     >
+                         <IconStar size={28} /> GO TO FINAL JEOPARDY <IconStar size={28} />
+                     </button>
+                </div>
+              </div>
+
+              {/* SCOREBOARD FOOTER */}
+              <div className="fixed bottom-0 left-0 right-0 bg-purple-900/90 backdrop-blur-md border-t-4 border-pink-500 p-3 shadow-2xl z-20">
+                <div className="max-w-7xl mx-auto flex justify-around gap-4 overflow-x-auto pb-2">
+                    {teams.map((team, idx) => (
+                        <div key={idx} className="bg-white/10 border-2 border-white/20 rounded-2xl p-3 flex flex-col items-center relative group min-w-[160px] transition-all hover:bg-white/20">
+                            <input 
+                                type="text" 
+                                value={team.name}
+                                onChange={(e) => handleNameChange(idx, e.target.value)}
+                                className="bg-transparent text-pink-300 text-center font-bold text-sm md:text-lg mb-1 w-full focus:outline-none focus:text-white uppercase tracking-wider"
+                            />
+                            <div className={`text-3xl md:text-4xl font-bold font-mono ${team.score < 0 ? 'text-red-400' : 'text-yellow-300'} drop-shadow-md`}>
+                                {team.score < 0 ? '-' : ''}${Math.abs(team.score)}
+                            </div>
+                            <div className="absolute -top-14 bg-purple-900/95 hidden group-hover:flex items-center justify-center gap-3 rounded-xl p-2 backdrop-blur-sm transition-opacity animate-fade-in border-2 border-pink-500 shadow-xl">
+                                <button onClick={() => handleScore(idx, 100)} className="bg-green-500 hover:bg-green-400 text-white p-3 rounded-xl flex-1 flex justify-center shadow-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1 transition-all"><IconCheck size={24} /></button>
+                                <button onClick={() => handleScore(idx, -100)} className="bg-red-500 hover:bg-red-400 text-white p-3 rounded-xl flex-1 flex justify-center shadow-lg border-b-4 border-red-700 active:border-b-0 active:translate-y-1 transition-all"><IconX size={24} /></button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* CLUE OVERLAY (Standard or Final) */}
+              {isClueActive && activeClue && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-purple-900/95 backdrop-blur-xl p-4 md:p-8 animate-slow-appear">
+                   <div className="max-w-7xl w-full flex flex-col items-center text-center gap-6 h-full justify-center relative">
+                      
+                      {/* Category & Timer Row */}
+                      <div className="w-full flex justify-between items-center px-4 md:px-8">
+                         <div className="text-pink-300 font-black tracking-widest uppercase text-2xl md:text-4xl animate-fade-in drop-shadow-md">
+                            {gameState === 'final' ? FINAL_JEOPARDY.category : CATEGORIES[activeClue.catIndex].title} <span className="text-white opacity-40 mx-3">|</span> <span className="text-yellow-300">{gameState === 'final' ? "FINAL JEOPARDY" : `$${CATEGORIES[activeClue.catIndex].clues[activeClue.clueIndex].value}`}</span>
+                         </div>
+                         
+                         {/* Timer Display */}
+                         {!revealed && (
+                           <div className={`flex items-center gap-3 text-3xl font-black font-mono px-6 py-3 rounded-2xl border-4 shadow-lg transition-all duration-500
+                               ${timer <= 5 ? 'bg-red-600 border-red-400 text-white animate-pulse scale-110' : 'bg-indigo-900 border-cyan-400 text-cyan-400'}`}>
+                              <IconClock className={timer <= 5 ? 'animate-bounce' : ''} /> 
+                              {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}
+                           </div>
+                         )}
+                      </div>
+
+                      {/* Timer Bar */}
+                      {!revealed && (
+                          <div className="w-full h-6 bg-black/40 rounded-full overflow-hidden shadow-inner border-2 border-white/10">
+                              <div 
+                                className={`h-full transition-all duration-1000 ease-linear shadow-[0_0_15px_rgba(255,255,255,0.5)] ${timer <= 10 ? 'bg-red-500' : 'bg-gradient-to-r from-lime-400 to-green-500'}`}
+                                style={{ width: `${(timer / (gameState === 'final' ? 60 : 30)) * 100}%` }}
+                              />
+                          </div>
+                      )}
+
+                      {/* The Question Text */}
+                      <div className="bg-indigo-600 p-8 md:p-12 rounded-[2rem] border-8 border-pink-400 shadow-[0_0_50px_rgba(236,72,153,0.4)] flex-grow flex items-center justify-center w-full max-h-[55vh] relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+                        <div className="z-10 w-full h-full overflow-y-auto max-h-full custom-scroll flex items-center justify-center">
+                            <p 
+                              className="text-3xl md:text-5xl font-bold text-white uppercase leading-relaxed drop-shadow-lg" 
+                              style={{ textShadow: '3px 3px 0px #4f46e5' }}
+                              dangerouslySetInnerHTML={{ __html: gameState === 'final' ? FINAL_JEOPARDY.question : CATEGORIES[activeClue.catIndex].clues[activeClue.clueIndex].question.replace(/\*\*(.*?)\*\*/g, '<span class="text-yellow-300 underline decoration-wavy decoration-pink-500">$1</span>') }}
+                            />
+                        </div>
+                      </div>
+
+                      {/* Interaction Area */}
+                      <div className="w-full flex flex-col items-center gap-6">
+                        
+                        {!revealed ? (
+                            <button 
+                                onClick={handleReveal}
+                                className="bg-yellow-400 hover:bg-yellow-300 text-purple-900 text-3xl font-black py-5 px-20 rounded-full shadow-2xl border-b-8 border-yellow-600 transition-all hover:scale-105 active:scale-95 active:border-b-0 active:translate-y-2"
+                            >
+                                SHOW ANSWER
+                            </button>
+                        ) : (
+                            <div className="w-full animate-slide-up flex flex-col items-center">
+                                <div className="text-white text-3xl md:text-6xl font-black mb-8 p-8 bg-fuchsia-600 rounded-3xl border-4 border-white/20 shadow-[0_10px_40px_rgba(192,38,211,0.6)] inline-block px-16 backdrop-blur-md transform -rotate-1">
+                                    {gameState === 'final' ? FINAL_JEOPARDY.answer : CATEGORIES[activeClue.catIndex].clues[activeClue.clueIndex].answer}
+                                </div>
+                                
+                                {/* Scoring Controls */}
+                                <div className="flex flex-wrap justify-center gap-4 w-full mb-8">
+                                   {teams.map((team, idx) => (
+                                     <div key={idx} className="bg-white/10 p-4 rounded-2xl flex flex-col gap-3 border-2 border-white/20 shadow-xl w-48 backdrop-blur-md">
+                                        <div className="text-white font-bold text-lg text-center truncate uppercase tracking-wider">{team.name}</div>
+                                        <div className="flex justify-between gap-3">
+                                            <button 
+                                              onClick={() => handleScore(idx, gameState === 'final' ? 0 : CATEGORIES[activeClue.catIndex].clues[activeClue.clueIndex].value)} 
+                                              className="bg-green-500 hover:bg-green-400 text-white p-3 rounded-xl flex-1 flex justify-center shadow-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1 transition-all"
+                                              title="Correct"
+                                            >
+                                                <IconCheck size={24} />
+                                            </button>
+                                            <button 
+                                              onClick={() => handleScore(idx, gameState === 'final' ? 0 : -CATEGORIES[activeClue.catIndex].clues[activeClue.clueIndex].value)}
+                                              className="bg-red-500 hover:bg-red-400 text-white p-3 rounded-xl flex-1 flex justify-center shadow-lg border-b-4 border-red-700 active:border-b-0 active:translate-y-1 transition-all"
+                                              title="Incorrect"
+                                            >
+                                                <IconX size={24} />
+                                            </button>
+                                        </div>
+                                        {gameState === 'final' && <div className="text-xs text-center text-pink-300 font-bold tracking-wide">(Manual wager)</div>}
+                                     </div>
+                                   ))}
+                                </div>
+
+                                <div>
+                                     <button 
+                                        onClick={handleCloseClue}
+                                        className="bg-white hover:bg-cyan-100 text-indigo-900 font-black py-4 px-12 rounded-full flex items-center gap-3 mx-auto text-xl shadow-xl transition-all hover:shadow-2xl hover:scale-105"
+                                     >
+                                        {gameState === 'final' ? "END GAME" : "BACK TO BOARD"} <IconArrowRight size={28} />
+                                     </button>
+                                </div>
+                            </div>
+                        )}
+                      </div>
+                   </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<JeopardyGame />);
+    </script>
+</body>
+</html>
